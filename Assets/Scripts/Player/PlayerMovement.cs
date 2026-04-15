@@ -38,22 +38,51 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        RotateWithCamera();
         Move();
     }
 
     void Move()
     {
-        Vector3 move = new Vector3(moveInput.x, 0, moveInput.y);
+        Vector3 forward = Camera.main.transform.forward;
+        Vector3 right = Camera.main.transform.right;
+
+        forward.y = 0f;
+        right.y = 0f;
+
+        forward.Normalize();
+        right.Normalize();
+
+        Vector3 move = (forward * moveInput.y + right * moveInput.x).normalized;
 
         if (move.magnitude >= 0.1f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(move);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-
             controller.Move(move * speed * Time.deltaTime);
         }
 
+        // gravedad
+        if (controller.isGrounded && velocity.y < 0)
+            velocity.y = -2f;
+
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+    }
+
+    void RotateWithCamera()
+    {
+        Vector3 cameraForward = Camera.main.transform.forward;
+        cameraForward.y = 0f;
+
+        if (cameraForward.sqrMagnitude < 0.01f) return;
+
+        cameraForward.Normalize();
+
+        Quaternion targetRotation = Quaternion.LookRotation(cameraForward);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            rotationSpeed * Time.deltaTime
+        );
     }
 }
